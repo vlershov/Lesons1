@@ -1,5 +1,6 @@
 package com.example.android1.first_frame;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.SQLException;
@@ -15,12 +16,16 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static String DB_PATH; // полный путь к базе данных
-    public static final int DATABASE_VARSION = 1;
-    public static final String DB_NAME = "Zametrki.db";
+    public static int DATABASE_VARSION = 1;
+    public static final String DB_NAME = "customers.db";
+    public static final String DB_NAME_DROP = "customers";
     public static final String TABLE_CONSTANS = "constans";
     public static final String KEY_ID = "_id";
     public static final String KEY_NAME = "name";
@@ -31,56 +36,39 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public DatabaseHelper(Context context) {
         super(context, DB_NAME, null, DATABASE_VARSION);
-        this.myContext=context;
+        myContext = context;
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            DB_PATH =context.getDataDir().getPath() +"/databases/"+ DB_NAME;
-        }
-        //Log.d("DatabaseHelper", DB_PATH);
     }
 
     @Override
-    public void onCreate(SQLiteDatabase db) { }
+    public void onCreate(SQLiteDatabase db) {
+        String query1 = "CREATE TABLE IF NOT EXISTS " + TABLE_CONSTANS + "(" +
+                KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT  NOT NULL," +
+                KEY_NAME + " TEXT  NOT NULL, " +
+                KEY_MASSEGES + " TEXT  NOT NULL, " +
+                KEY_DATE + " TEXT  NOT NULL); ";
+        db.execSQL(query1);
+    }
     @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion,  int newVersion) { }
+    public void onUpgrade(SQLiteDatabase db, int oldVersion,  int newVersion) {
 
-    void create_db(){
+        db.execSQL("pragma user_version = 1");
+        db.execSQL("DROP TABLE IF EXISTS " + DB_NAME_DROP);
 
-        InputStream myInput = null;
-        OutputStream myOutput = null;
-        try {
-            File file = new File(DB_PATH);
-            if (!file.exists()) {
-                //получаем локальную бд как поток
-                myInput = myContext.getAssets().open(DB_NAME);
-                // Путь к новой бд
-                String outFileName = DB_PATH;
+        onCreate(db);
+    }
 
-                // Открываем пустую бд
-                myOutput = new FileOutputStream(outFileName);
 
-                // побайтово копируем данные
-                byte[] buffer = new byte[1024];
-                int length;
-                while ((length = myInput.read(buffer)) > 0) {
-                    myOutput.write(buffer, 0, length);
-                }
+    void create_db(SQLiteDatabase db, String name, String date, String massegse){
 
-                myOutput.flush();
-            }
-        }
-        catch(IOException ex){
-            Log.d("DatabaseHelper", ex.getMessage());
-        }
-        finally {
-            try{
-                if(myOutput!=null) myOutput.close();
-                if(myInput!=null) myInput.close();
-            }
-            catch(IOException ex){
-                Log.d("DatabaseHelper", ex.getMessage());
-            }
-        }
+        ContentValues newValues = new ContentValues();
+
+        newValues.put(KEY_NAME, name);
+        newValues.put(KEY_DATE, date);
+        newValues.put(KEY_MASSEGES, massegse);
+
+        db.insert(TABLE_CONSTANS, null, newValues);
+
     }
     public SQLiteDatabase open()throws SQLException {
 
